@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinical Dashboard — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="dashboard-body">
+
+    <!-- ===================================================================
+         HEADER BAR (60px)
+         =================================================================== -->
+    <header class="dash-header app-header">
+        <div class="dash-header-left header-left">
+            <button type="button" id="sidebar-toggle-btn" class="sidebar-toggle-btn" aria-label="Toggle Sidebar">
+                ☰
+            </button>
+            <a href="{{ url_for('dashboard_page') }}" class="dash-logo logo">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+            <span class="dash-divider">|</span>
+            <span class="dash-subtitle header-subtitle">Adrenal Tumor Detection &amp; Ki-67 Analysis</span>
+        </div>
+
+        <div class="dash-header-right header-right">
+            <!-- Generate Report Button -->
+            <button type="button" id="generate-report-btn" class="btn-report" disabled>
+                📄 Generate Report
+            </button>
+
+            <!-- User Dropdown Menu -->
+            <div class="user-menu-wrapper user-menu">
+                <button type="button" id="header-user-btn" class="user-dropdown-trigger" aria-expanded="false">
+                    <span>👤 {{ user.full_name if user else 'Dr. Jane Smith' }}</span>
+                    <span class="caret">▼</span>
+                </button>
+                <div id="header-user-dropdown" class="user-dropdown-menu" hidden>
+                    <div class="dropdown-user-meta">
+                        <div class="dropdown-user-name">{{ user.full_name if user else 'Dr. Jane Smith' }}</div>
+                        <div class="dropdown-user-inst">{{ user.institution if user else 'Memorial Oncology Hospital' }}</div>
+                    </div>
+                    <a href="{{ url_for('profile_page') }}" class="dropdown-item" id="menu-profile-btn">Profile</a>
+                    <a href="{{ url_for('settings_page') }}" class="dropdown-item" id="menu-settings-btn">Settings</a>
+                    <hr class="dropdown-sep">
+                    <a href="{{ url_for('logout_page') }}" class="dropdown-item dropdown-logout" id="header-logout-btn">Logout</a>
+                </div>
+            </div>
+
+            <div class="online-badge status-badge">
+                <span class="online-dot"></span>
+                <span>Online</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ===================================================================
+         APP SHELL (Sticky Sidebar + Tabbed Main Content)
+         =================================================================== -->
+    <div class="dash-shell">
+        <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+
+        <!-- ===============================================================
+             STICKY SIDEBAR (280px, #1E3A5F)
+             =============================================================== -->
+        <aside id="app-sidebar" class="sidebar">
+
+            <!-- 1. User Profile Card -->
+            <section class="sb-section sb-profile-card">
+                <div class="sb-user-name">👤 {{ user.full_name if user else 'Dr. Jane Smith' }}</div>
+                <div class="sb-user-email">{{ user.email if user else 'jane@hospital.com' }}</div>
+                <a href="{{ url_for('logout_page') }}" id="sidebar-logout-btn" class="sb-logout-btn" style="display: inline-block;">Logout ▼</a>
+            </section>
+
+            <!-- 2. Upload Panel (Sidebar) -->
+            <section class="sb-section upload-panel">
+                <h3 class="sb-heading">UPLOAD CT SLICES</h3>
+
+                <div class="drop-zone sb-drop-zone" id="drop-zone" tabindex="0" role="button" aria-label="Click to select or drag and drop files">
+                    <div class="drop-icon sb-drop-icon">📁</div>
+                    <div class="drop-text sb-drop-text">Click to select or drag and drop files</div>
+                    <div class="drop-hint sb-drop-hint">Supported: PNG, JPG, JPEG</div>
+                </div>
+
+                <div class="upload-actions">
+                    <button type="button" id="select-single" class="btn-secondary">📄 Select Single Slice</button>
+                    <button type="button" id="select-series" class="btn-secondary">📁 Select Slice Series</button>
+                </div>
+
+                <input type="file" id="file-single" accept=".png,.jpg,.jpeg" hidden />
+                <input type="file" id="file-series" accept=".png,.jpg,.jpeg" multiple webkitdirectory hidden />
+
+                <div class="file-status sb-file-info" id="file-status">No files selected</div>
+
+                <button type="button" id="run-btn" class="btn-primary sb-run-btn" disabled>Run Analysis</button>
+            </section>
+
+            <!-- 3. Patient Information -->
+            <section class="sb-section">
+                <h2 class="sb-heading">PATIENT INFORMATION</h2>
+                <div class="sidebar-input-group">
+                    <label for="patient-id">Patient ID</label>
+                    <input type="text" id="patient-id" placeholder="Enter ID or Name" />
+                </div>
+                <div class="sidebar-input-group">
+                    <label for="patient-age">Age</label>
+                    <input type="number" id="patient-age" placeholder="Age" min="0" max="120" />
+                </div>
+                <div class="sidebar-input-group">
+                    <label for="patient-sex">Sex</label>
+                    <select id="patient-sex">
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- 4. Findings -->
+            <section class="sb-section">
+                <h2 class="sb-heading">FINDINGS</h2>
+                <div class="sb-kv-list">
+                    <div class="sb-kv-row">
+                        <span class="sb-kv-label">Tumor Location</span>
+                        <span id="sb-tumor-location" class="sb-kv-val">—</span>
+                    </div>
+                    <div class="sb-kv-row">
+                        <span class="sb-kv-label">Estimated Size</span>
+                        <span id="sb-estimated-size" class="sb-kv-val mono">—</span>
+                    </div>
+                    <div class="sb-kv-row">
+                        <span class="sb-kv-label">Estimated Volume</span>
+                        <span id="sb-estimated-volume" class="sb-kv-val mono">—</span>
+                    </div>
+                    <div class="sb-kv-row">
+                        <span class="sb-kv-label">Detection Confidence</span>
+                        <span id="sb-detection-confidence" class="sb-kv-val mono">—</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. Parameters -->
+            <section class="sb-section">
+                <h2 class="sb-heading">PARAMETERS</h2>
+                <div class="sb-slider-header">
+                    <label for="threshold-slider">Threshold</label>
+                    <span id="threshold-value" class="mono">0.80</span>
+                </div>
+                <input
+                    type="range"
+                    id="threshold-slider"
+                    min="0.50"
+                    max="0.95"
+                    step="0.05"
+                    value="0.80"
+                    class="sb-slider"
+                />
+                <div class="sb-last-analyzed">
+                    Last analyzed: <span id="last-analyzed" class="mono">0.80</span>
+                </div>
+            </section>
+
+            <!-- 6. Settings -->
+            <section class="sb-section sb-section-last">
+                <h2 class="sb-heading">SETTINGS</h2>
+                <button type="button" id="run-new-analysis-btn" class="sb-secondary-btn">
+                    Run New Analysis
+                </button>
+            </section>
+
+        </aside>
+
+        <!-- ===============================================================
+             MAIN WORKSPACE (4 Tabs — fits in one desktop viewport)
+             =============================================================== -->
+        <main class="dash-main main-content">
+
+            <!-- TAB BAR -->
+            <nav class="dash-tabs tab-bar" role="tablist" aria-label="Diagnostic Views">
+                <button type="button" class="dash-tab active" data-tab="overview" role="tab" aria-selected="true">
+                    Overview
+                </button>
+                <button type="button" class="dash-tab" data-tab="segmentation" role="tab" aria-selected="false">
+                    Segmentation
+                </button>
+                <button type="button" class="dash-tab" data-tab="measurements" role="tab" aria-selected="false">
+                    Measurements
+                </button>
+                <button type="button" class="dash-tab" data-tab="profile" role="tab" aria-selected="false">
+                    Profile
+                </button>
+            </nav>
+
+            <!-- ERROR DISPLAY BOX -->
+            <div id="error-box" class="error-box-container" style="display: none;" role="alert"></div>
+
+            <!-- LOADING OVERLAY -->
+            <div id="loading-panel" class="dash-state-card" hidden>
+                <div class="spinner"></div>
+                <div class="loading-title" id="loading-title">Running U-Net Segmentation...</div>
+                <div class="loading-sub" id="loading-sub">Processing axial CT scan</div>
+            </div>
+
+            <!-- EMPTY STATE (Before Upload) -->
+            <div id="empty-panel" class="dash-state-card">
+                <div class="empty-icon">🏥</div>
+                <h2 class="empty-title">Upload a CT Slice or Series to Begin</h2>
+                <p class="empty-desc">
+                    Use <strong>Select Single Slice</strong> or <strong>Select Slice Series</strong> in the left sidebar (or drag and drop files) and click <strong>Run Analysis</strong>.
+                </p>
+            </div>
+
+            <!-- TAB PANELS CONTAINER -->
+            <div id="tab-panels-container" class="tab-panels-container" hidden>
+
+                <!-- =======================================================
+                     TAB 1: OVERVIEW
+                     ======================================================= -->
+                <section id="tab-overview" class="tab-panel tab-content active" role="tabpanel">
+                    <!-- Detection Result Card -->
+                    <div id="detection-card" class="detection-card detection-positive">
+                        <div class="det-headline" id="det-headline">
+                            ⚠️ TUMOR DETECTED &bull; POSITIVE FINDING
+                        </div>
+                        <div class="det-metrics">
+                            <span>Detection Confidence: <strong id="det-confidence" class="mono">—</strong></span>
+                            <span>Threshold: <strong id="det-threshold" class="mono">0.80</strong></span>
+                        </div>
+                        <div class="det-subtext" id="det-subtext">
+                            Pathological adrenal lesion detected.
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats Grid (3 columns × 2 rows = 6 cards) -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">Slices Analyzed</div>
+                            <div id="stat-slices-analyzed" class="stat-value mono">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Peak Area</div>
+                            <div id="stat-peak-area" class="stat-value mono">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Total Volume</div>
+                            <div id="stat-total-volume" class="stat-value mono">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Max Dimension</div>
+                            <div id="stat-max-dim" class="stat-value mono">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Tumor Area</div>
+                            <div id="stat-tumor-area" class="stat-value mono">—</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Detection Confidence</div>
+                            <div id="stat-confidence" class="stat-value mono">—</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- =======================================================
+                     TAB 2: SEGMENTATION (3-panel viewer + slice navigator)
+                     ======================================================= -->
+                <section id="tab-segmentation" class="tab-panel tab-content" role="tabpanel" hidden>
+                    <div class="seg-navigator-bar">
+                        <span class="seg-nav-label">Slice:</span>
+                        <button type="button" id="prev-slice-btn" class="seg-nav-btn" aria-label="Previous Slice">◀</button>
+                        <span id="slice-counter" class="seg-slice-counter mono">1 / 1</span>
+                        <button type="button" id="next-slice-btn" class="seg-nav-btn" aria-label="Next Slice">▶</button>
+                        <button type="button" id="jump-peak-btn" class="seg-jump-btn">Jump to Peak</button>
+                    </div>
+
+                    <div class="seg-three-panel">
+                        <div class="seg-panel-card">
+                            <div class="seg-panel-title">Original CT</div>
+                            <div class="seg-img-box">
+                                <img id="seg-orig-img" src="" alt="Original CT Slice" />
+                            </div>
+                        </div>
+                        <div class="seg-panel-card">
+                            <div class="seg-panel-title">Segmentation Mask</div>
+                            <div class="seg-img-box">
+                                <img id="seg-mask-img" src="" alt="Segmentation Mask" />
+                            </div>
+                        </div>
+                        <div class="seg-panel-card">
+                            <div class="seg-panel-title">Tumor Overlay</div>
+                            <div class="seg-img-box">
+                                <img id="seg-overlay-img" src="" alt="Tumor Overlay" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- =======================================================
+                     TAB 3: MEASUREMENTS (Morphometric Measurements Table)
+                     ======================================================= -->
+                <section id="tab-measurements" class="tab-panel tab-content" role="tabpanel" hidden>
+                    <div class="meas-card">
+                        <div class="meas-card-header">
+                            <h3 class="meas-card-title">Morphometric Measurements</h3>
+                            <span id="meas-slice-badge" class="meas-slice-badge mono">Peak Slice</span>
+                        </div>
+                        <table class="meas-table">
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Cross-Sectional Area</td>
+                                    <td id="meas-area" class="mono">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Approx. Extruded Volume</td>
+                                    <td id="meas-volume" class="mono">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Transverse Width</td>
+                                    <td id="meas-width" class="mono">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Anteroposterior Height</td>
+                                    <td id="meas-height" class="mono">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Maximum In-Plane Dimension</td>
+                                    <td id="meas-max-dim" class="mono">—</td>
+                                </tr>
+                                <tr>
+                                    <td>Slice Area Coverage</td>
+                                    <td id="meas-coverage" class="mono">—</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- =======================================================
+                     TAB 4: PROFILE (Always Renders Line Graph)
+                     ======================================================= -->
+                <section id="tab-profile" class="tab-panel tab-content" role="tabpanel" hidden>
+                    <div id="profile-content">
+                        <canvas id="profile-chart"></canvas>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

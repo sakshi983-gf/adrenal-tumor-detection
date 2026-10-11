@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdrenalCare — Deep Learning Based Detection of Adrenocortical Carcinoma</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="landing-body">
+
+    <!-- ===================================================================
+         NAVBAR (fixed, 64px height)
+         =================================================================== -->
+    <header class="landing-navbar">
+        <div class="landing-nav-container">
+            <a href="{{ url_for('landing_page') }}" class="landing-brand">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+            <nav class="landing-nav-links" aria-label="Primary Navigation">
+                <a href="#features" class="landing-nav-link">Features</a>
+                <a href="#how-it-works" class="landing-nav-link">How It Works</a>
+                {% if user %}
+                <a href="{{ url_for('dashboard_page') }}" class="btn-navy-filled">Go to Dashboard</a>
+                {% else %}
+                <a href="{{ url_for('login_page') }}" class="landing-login-link">Login</a>
+                <a href="{{ url_for('register_page') }}" class="btn-navy-filled">Get Started</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <!-- ===================================================================
+         HERO SECTION (Clean Text-Only Hero)
+         =================================================================== -->
+    <main>
+        <section class="landing-hero">
+            <div class="landing-container hero-inner">
+                <h1 class="hero-heading">
+                    Deep Learning Based Detection of Adrenocortical Carcinoma and Ki-67 Growth Prediction
+                </h1>
+                <p class="hero-subtext">
+                    Automated segmentation, morphometric analysis, and spatial tumor profiling from CT slice series.
+                </p>
+                <div class="hero-cta-row">
+                    <a href="{{ url_for('register_page') }}" class="btn-navy-filled btn-lg">🚀 Get Started</a>
+                    <a href="#features" class="btn-navy-outline btn-lg">📖 Learn More</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             FEATURES SECTION (4-column grid on desktop)
+             =================================================================== -->
+        <section id="features" class="landing-features">
+            <div class="landing-container">
+                <h2 class="section-heading">Clinical Decision Support Features</h2>
+                <div class="features-grid">
+                    <article class="feature-card">
+                        <div class="feature-icon">🔬</div>
+                        <h3 class="feature-title">Auto Segmentation</h3>
+                        <p class="feature-desc">U-Net draws the exact tumor boundary across axial CT slices.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3 class="feature-title">Morphometric Measurements</h3>
+                        <p class="feature-desc">Area, volume, width, and height in mm and cm³.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">🧠</div>
+                        <h3 class="feature-title">Spatial Burden Index</h3>
+                        <p class="feature-desc">Spatial visualization of tumor distribution across the series.</p>
+                    </article>
+
+                    <article class="feature-card">
+                        <div class="feature-icon">📈</div>
+                        <h3 class="feature-title">Tumor Profile Graph</h3>
+                        <p class="feature-desc">Cross-sectional area plotted across contiguous axial slices.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             HOW IT WORKS SECTION (3 numbered steps)
+             =================================================================== -->
+        <section id="how-it-works" class="landing-how">
+            <div class="landing-container">
+                <h2 class="section-heading">How It Works</h2>
+                <div class="steps-row">
+                    <div class="step-card">
+                        <div class="step-icon">📁</div>
+                        <div class="step-title">1️⃣ Upload CT slices</div>
+                        <p class="step-desc">Select a patient CT slice folder or drag and drop axial PNG/JPG slices.</p>
+                    </div>
+
+                    <div class="step-arrow" aria-hidden="true">→</div>
+
+                    <div class="step-card">
+                        <div class="step-icon">🧠</div>
+                        <div class="step-title">2️⃣ Run analysis</div>
+                        <p class="step-desc">3-layer CT validation and U-Net segmentation process the series automatically.</p>
+                    </div>
+
+                    <div class="step-arrow" aria-hidden="true">→</div>
+
+                    <div class="step-card">
+                        <div class="step-icon">📊</div>
+                        <div class="step-title">3️⃣ View results</div>
+                        <p class="step-desc">Inspect segmentation masks, morphometric tables, and spatial area profiles.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================
+             CALL TO ACTION SECTION
+             =================================================================== -->
+        <section class="landing-cta">
+            <div class="landing-container cta-inner">
+                <h2 class="cta-heading">Ready to analyze your first CT scan?</h2>
+                <a href="{{ url_for('register_page') }}" class="btn-navy-filled btn-lg">🚀 Get Started</a>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===================================================================
+         FOOTER
+         =================================================================== -->
+    <footer class="landing-footer">
+        <p>AdrenalCare — Research Prototype</p>
+    </footer>
+
+</body>
+</html>

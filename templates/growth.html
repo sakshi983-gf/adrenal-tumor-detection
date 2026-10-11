@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tumor Size Analysis — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C8 2 6 5 6 8C6 11 8 13 10 15C11 16 12 18 12 21C12 18 13 16 14 15C16 13 18 11 18 8C18 5 16 2 12 2Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                <circle cx="12" cy="9" r="2" fill="currentColor"/>
+            </svg>
+            <div class="brand-text">
+                <span class="brand-name">AdrenalCare</span>
+                <span class="brand-sub">Clinical Decision Support System</span>
+            </div>
+        </div>
+        <nav class="topnav">
+            <a href="/" class="nav-link">Analysis</a>
+            <a href="/growth" class="nav-link active">Tumor Size Analysis</a>
+        </nav>
+        <div class="status-badge">
+            <span class="dot"></span>
+            System Online
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="page-header">
+        <div>
+            <h1 class="page-title">Tumor Size Analysis</h1>
+            <p class="page-subtitle">
+                Tumor volume and cross-sectional size distribution across all 53 patients.
+            </p>
+        </div>
+    </section>
+
+    {% if error %}
+    <div class="card">
+        <div class="alert alert-error">{{ error }}</div>
+    </div>
+    {% endif %}
+
+    {% if comparison_image %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Tumor Volume Comparison — All Patients</h2>
+            <span class="card-meta">53 patients</span>
+        </div>
+        <div style="background:#0F172A; padding:20px; border-radius:8px; text-align:center;">
+            <img src="{{ url_for('growth_file', filename=comparison_image) }}"
+                 alt="Tumor volume comparison chart"
+                 style="max-width:100%; height:auto; display:block; margin:0 auto;">
+        </div>
+    </div>
+    {% endif %}
+
+    {% if patient_graphs %}
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Per-Patient Tumor Size Profiles</h2>
+            <span class="card-meta">Showing all {{ patient_graphs|length }} patients</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            {% for graph in patient_graphs %}
+            <div style="background:#0F172A; padding:14px; border-radius:8px;">
+                <div style="color:#E2E8F0; font-size:12px; font-weight:600; padding:0 0 10px 0;">
+                    {{ graph.patient }}
+                </div>
+                <img src="{{ url_for('growth_file', filename=graph.filename) }}"
+                     alt="{{ graph.patient }} profile"
+                     style="width:100%; height:auto; display:block; border-radius:4px;">
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <footer class="page-footer">
+        <p>
+            <strong>AdrenalCare</strong> &nbsp;•&nbsp; Research prototype for academic use only &nbsp;•&nbsp; Not a clinically validated medical device.
+        </p>
+    </footer>
+
+</main>
+
+</body>
+</html>

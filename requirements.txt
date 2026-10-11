@@ -1,0 +1,10 @@
+pydicom
+nibabel
+numpy
+Pillow
+tensorflow
+matplotlib
+scipy
+flask
+
+

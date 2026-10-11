@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinician Profile — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+    <header class="dash-header">
+        <div class="dash-header-left">
+            <a href="{{ url_for('dashboard_page') }}" class="dash-logo">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+            <span class="dash-divider">|</span>
+            <span class="dash-subtitle">Clinician Profile</span>
+        </div>
+        <div class="dash-header-right">
+            <a href="{{ url_for('dashboard_page') }}" class="btn-navy-outline" style="padding: 6px 14px; font-size: 13px;">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('settings_page') }}" class="landing-nav-link" style="font-weight: 600;">Settings</a>
+            <a href="{{ url_for('logout_page') }}" class="landing-nav-link" style="color: #C62828; font-weight: 600;">Logout</a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-wrapper" style="max-width: 520px;">
+            <h1 class="auth-title">Clinician Profile</h1>
+            <div class="auth-card">
+                <div id="profile-msg" class="auth-info-alert" style="display: none;"></div>
+                <div id="profile-err" class="auth-alert" style="display: none;"></div>
+
+                <form id="profile-form" novalidate>
+                    <div class="auth-field">
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" value="{{ user.full_name if user else 'Dr. Jane Smith' }}" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" value="{{ user.email if user else 'jane@hospital.com' }}" disabled style="background: #F5F7FA; color: #6B7280;">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="license_number">Medical License Number</label>
+                        <input type="text" id="license_number" class="mono" value="{{ user.license_number if user else 'MD-948201' }}" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="institution">Hospital / Institution</label>
+                        <input type="text" id="institution" value="{{ user.institution if user else 'Memorial Oncology Hospital' }}" required>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button type="submit" class="btn-navy-filled" style="flex: 1;">Save Changes</button>
+                        <a href="{{ url_for('dashboard_page') }}" class="btn-navy-outline">Return to Dashboard</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.getElementById("profile-form");
+            const msgBox = document.getElementById("profile-msg");
+            const errBox = document.getElementById("profile-err");
+
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                msgBox.style.display = "none";
+                errBox.style.display = "none";
+
+                const payload = {
+                    full_name: document.getElementById("full_name").value.trim(),
+                    license_number: document.getElementById("license_number").value.trim(),
+                    institution: document.getElementById("institution").value.trim()
+                };
+
+                try {
+                    const res = await fetch("/api/profile", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.error) {
+                        errBox.textContent = data.error || "Could not update profile.";
+                        errBox.style.display = "block";
+                        return;
+                    }
+                    msgBox.textContent = "Clinician profile updated successfully.";
+                    msgBox.style.display = "block";
+                } catch (err) {
+                    errBox.textContent = "Network error while saving profile.";
+                    errBox.style.display = "block";
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

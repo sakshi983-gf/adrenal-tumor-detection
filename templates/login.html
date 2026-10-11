@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+    <header class="auth-header">
+        <div class="auth-header-inner">
+            <a href="{{ url_for('landing_page') }}" class="landing-brand">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-wrapper">
+            <h1 class="auth-title">Welcome Back</h1>
+            <div class="auth-card">
+                <div id="auth-error" class="auth-alert" style="display: none;"></div>
+                <div id="auth-info" class="auth-info-alert" style="display: none;"></div>
+
+                <form id="login-form" novalidate>
+                    <div class="auth-field">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="jane@hospital.com" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                    </div>
+
+                    <div class="auth-options-row">
+                        <label class="auth-checkbox-label">
+                            <input type="checkbox" id="remember" name="remember">
+                            <span>Remember me</span>
+                        </label>
+                        <a href="#forgot" id="forgot-password-link" class="auth-link-sm">Forgot password?</a>
+                    </div>
+
+                    <button type="submit" id="login-btn" class="btn-navy-filled btn-block">Login</button>
+                </form>
+
+                <p class="auth-footer-text">
+                    New here? <a href="{{ url_for('register_page') }}">Create an account</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.getElementById("login-form");
+            const errorBox = document.getElementById("auth-error");
+            const infoBox = document.getElementById("auth-info");
+            const submitBtn = document.getElementById("login-btn");
+            const forgotLink = document.getElementById("forgot-password-link");
+
+            function showError(msg) {
+                infoBox.style.display = "none";
+                errorBox.textContent = msg;
+                errorBox.style.display = "block";
+            }
+
+            forgotLink.addEventListener("click", function (e) {
+                e.preventDefault();
+                errorBox.style.display = "none";
+                infoBox.textContent = "Please contact your hospital IT administrator or use demo account: jane@hospital.com / Password123";
+                infoBox.style.display = "block";
+            });
+
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                errorBox.style.display = "none";
+                infoBox.style.display = "none";
+
+                const payload = {
+                    email: document.getElementById("email").value.trim(),
+                    password: document.getElementById("password").value,
+                    remember: document.getElementById("remember").checked
+                };
+
+                if (!payload.email || !payload.password) {
+                    showError("Please enter both email and password.");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Signing in...";
+
+                try {
+                    const res = await fetch("/api/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.error) {
+                        showError(data.error || "Invalid credentials.");
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Login";
+                        return;
+                    }
+                    window.location.href = data.redirect || "/dashboard";
+                } catch (err) {
+                    showError("Network error. Please try again.");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Login";
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

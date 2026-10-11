@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AdrenalCare — Adrenal Tumor Detection &amp; Ki-67 Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- =========================================================================
+     HEADER BAR (60px)
+     ========================================================================= -->
+<header class="header-bar" role="banner">
+    <div class="header-left">
+        <button type="button" id="sidebarToggleBtn" class="hamburger-btn" aria-label="Toggle patient case sidebar" aria-expanded="false" aria-controls="patientSidebar">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </button>
+        <a href="/" class="brand-logo" aria-label="AdrenalCare Home">
+            <span class="brand-emoji" aria-hidden="true">🏥</span>
+            <span class="brand-title">AdrenalCare</span>
+        </a>
+    </div>
+
+    <div class="header-center">
+        <span class="header-subtitle">Adrenal Tumor Detection &amp; Ki-67 Analysis</span>
+    </div>
+
+    <div class="header-right">
+        <button type="button" id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle dark mode" title="Toggle Dark / Light Mode">
+            <span id="themeIcon" aria-hidden="true">🌙</span>
+        </button>
+        <div class="online-status" role="status" aria-live="polite">
+            <span class="online-dot" aria-hidden="true"></span>
+            <span class="online-text">System Online</span>
+        </div>
+    </div>
+</header>
+
+<!-- =========================================================================
+     APP SHELL: LEFT SIDEBAR (280px) + MAIN DASHBOARD
+     ========================================================================= -->
+<div class="app-shell">
+
+    <!-- Mobile Backdrop -->
+    <div id="sidebarBackdrop" class="sidebar-backdrop" hidden></div>
+
+    <!-- =====================================================================
+         LEFT SIDEBAR (280px, #1E3A5F background, white text)
+         ===================================================================== -->
+    <aside id="patientSidebar" class="left-sidebar" aria-label="Patient Case &amp; Analysis Controls">
+        <div class="sidebar-top-header">PATIENT CASE</div>
+
+        <!-- FIX #2: Section 1: Patient Information (Editable User Input Fields) -->
+        <section class="sidebar-section" aria-labelledby="sb-sec1-title">
+            <h2 id="sb-sec1-title" class="sidebar-section-title">1. Patient Information</h2>
+
+            <div class="sidebar-input-group">
+                <label for="patient-id">Patient ID / Name</label>
+                <input
+                    type="text"
+                    id="patient-id"
+                    placeholder="Enter patient ID"
+                    maxlength="50"
+                    autocomplete="off"
+                />
+            </div>
+
+            <div class="sidebar-input-group">
+                <label for="patient-age">Age</label>
+                <input
+                    type="number"
+                    id="patient-age"
+                    placeholder="Years"
+                    min="0"
+                    max="120"
+                />
+            </div>
+
+            <div class="sidebar-input-group">
+                <label for="patient-sex">Sex</label>
+                <select id="patient-sex">
+                    <option value="">Select...</option>
+                    <option value="M">Male</option>
+                    <option value="F">Female</option>
+                    <option value="O">Other</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- FIX #4: Section 2: Findings (No Duplicate Confidence Here) -->
+        <section class="sidebar-section" aria-labelledby="sb-sec2-title">
+            <h2 id="sb-sec2-title" class="sidebar-section-title">2. Findings</h2>
+            <div class="sidebar-kv-list">
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Tumor Location</span>
+                    <span id="sbTumorLocation" class="sidebar-kv-val">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Estimated Size</span>
+                    <span id="sbAiSize" class="sidebar-kv-val mono">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Estimated Volume</span>
+                    <span id="sbAiVolume" class="sidebar-kv-val mono">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Dataset Reference — Conditional (Category C) -->
+        <section id="sidebarDatasetRef" class="sidebar-section" aria-labelledby="sb-sec3-title" hidden>
+            <h2 id="sb-sec3-title" class="sidebar-section-title">3. Dataset Reference (TCIA)</h2>
+            <div class="sidebar-ki67-highlight">
+                <span class="highlight-label">Biopsy-Confirmed Ki-67</span>
+                <span id="sbBiopsyKi67" class="highlight-val mono">20.0%</span>
+                <span class="highlight-tag">Ground Truth</span>
+            </div>
+            <div class="sidebar-kv-list">
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Pathological Gross Size</span>
+                    <span id="sbGrossSize" class="sidebar-kv-val mono">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Resection Margin</span>
+                    <span id="sbResectionMargin" class="sidebar-kv-val mono">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">AJCC Stage</span>
+                    <span id="sbAjccStage" class="sidebar-kv-val mono">—</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Analysis Parameters -->
+        <section class="sidebar-section" aria-labelledby="sb-sec4-title">
+            <h2 id="sb-sec4-title" class="sidebar-section-title">4. Analysis Parameters</h2>
+            <div class="sidebar-kv-list">
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Current Slice</span>
+                    <span id="sbCurrentSlice" class="sidebar-kv-val mono">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Peak Slice</span>
+                    <span id="sbPeakSlice" class="sidebar-kv-val mono">—</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">Model Threshold</span>
+                    <span id="sbModelThreshold" class="sidebar-kv-val mono">0.80</span>
+                </div>
+                <div class="sidebar-kv-row">
+                    <span class="sidebar-kv-key">U-Net Version</span>
+                    <span class="sidebar-kv-val mono">v2 (1.95M params)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- FIX #3: Section 5: Settings with Pending Changes Indicator -->
+        <section class="sidebar-section sidebar-section-last" aria-labelledby="sb-sec5-title">
+            <h2 id="sb-sec5-title" class="sidebar-section-title">5. Settings</h2>
+
+            <div class="threshold-header">
+                <label for="threshold-slider" class="threshold-label">Threshold Slider</label>
+                <span id="pending-badge" class="badge badge-warning" style="display: none;">
+                    ⚠ Changes pending — click Run
+                </span>
+            </div>
+
+            <input
+                type="range"
+                id="threshold-slider"
+                min="0.50"
+                max="0.95"
+                step="0.01"
+                value="0.80"
+            />
+
+            <div class="threshold-labels mono">
+                <span>0.50</span>
+                <span id="threshold-value">0.80</span>
+                <span>0.95</span>
+            </div>
+
+            <div class="threshold-info">
+                Last analyzed: <span id="last-analyzed" class="mono">0.80</span>
+            </div>
+
+            <button type="button" id="run-analysis-btn" class="btn-primary" disabled>
+                Run New Analysis
+            </button>
+        </section>
+    </aside>
+
+    <!-- =====================================================================
+         MAIN DASHBOARD
+         ===================================================================== -->
+    <main class="main-dashboard" id="mainDashboard">
+
+        <!-- PRINT-ONLY HEADER (For PDF Export — Includes Patient ID, Age, Sex, Threshold) -->
+        <div class="print-only-header" aria-hidden="true">
+            <div class="print-header-top">
+                <div>
+                    <h1>AdrenalCare — Analysis Report</h1>
+                    <p class="print-sub">Clinical Decision Support &amp; Spatial Morphometric Assessment</p>
+                </div>
+                <div class="print-meta mono">
+                    <div>Date: <span id="printReportDate">—</span></div>
+                    <div>File: <span id="printReportFile">—</span></div>
+                </div>
+            </div>
+            <div class="print-patient-strip">
+                <div><strong>Patient ID:</strong> <span id="printPatientId">Unspecified</span></div>
+                <div><strong>Age:</strong> <span id="printPatientAge">N/A</span></div>
+                <div><strong>Sex:</strong> <span id="printPatientSex">N/A</span></div>
+                <div><strong>Threshold:</strong> <span id="printThresholdVal" class="mono">0.80</span></div>
+                <div><strong>Location:</strong> <span id="printTumorLocation">—</span></div>
+            </div>
+        </div>
+
+        <!-- =================================================================
+             SECTION 0: CT SLICE INPUT (Always Visible — FIX #6: No Toggle Button)
+             ================================================================= -->
+        <section id="uploadPanelSection" class="dashboard-card upload-panel-card" aria-labelledby="uploadPanelTitle">
+            <div class="upload-card-header">
+                <div>
+                    <h2 id="uploadPanelTitle" class="card-section-title">CT SLICE INPUT</h2>
+                    <p class="upload-accepted-note">Accepted: PNG, JPG, JPEG &bull; Window: [-160, 240] HU</p>
+                </div>
+                <div class="upload-header-controls">
+                    <div class="upload-mode-tabs" role="tablist" aria-label="Upload Mode">
+                        <button type="button" id="modeSingleBtn" class="mode-tab active" role="tab" aria-selected="true">
+                            📄 Upload Single Slice
+                        </button>
+                        <button type="button" id="modeMultiBtn" class="mode-tab" role="tab" aria-selected="false">
+                            📁 Upload Slice Series
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="uploadPanelBody" class="upload-panel-body">
+                <form id="analyzeForm" novalidate>
+                    <input
+                        type="file"
+                        id="ctFileInput"
+                        name="file"
+                        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                        class="sr-only-file-input"
+                        aria-label="Select CT slice image"
+                    >
+                    <div
+                        id="dropZone"
+                        class="upload-dropzone"
+                        tabindex="0"
+                        role="button"
+                        aria-label="Click to select or drag and drop a CT slice"
+                    >
+                        <div class="dropzone-icon" aria-hidden="true">📁</div>
+                        <div id="dropZonePrimaryText" class="dropzone-primary">
+                            Click to select or drag and drop a CT slice
+                        </div>
+                        <div class="dropzone-secondary">
+                            Select preprocessed abdominal axial CT slice (512 &times; 512 recommended)
+                        </div>
+                    </div>
+
+                    <div class="upload-action-bar">
+                        <div class="selected-file-pill">
+                            <span class="file-pill-label">File:</span>
+                            <span id="selectedFileName" class="file-pill-name mono">[No file selected]</span>
+                        </div>
+
+                        <button type="submit" id="runAnalysisBtn" class="btn-primary-run" disabled>
+                            <span id="runBtnIcon" aria-hidden="true">▶</span>
+                            <span id="runBtnText">Run Analysis</span>
+                        </button>
+                    </div>
+
+                    <p class="upload-footnote">
+                        Inference runs locally using trained lightweight U-Net (1.95M parameters)
+                    </p>
+                </form>
+            </div>
+
+            <!-- Interactive Slice Navigator (visible when multiple slices exist) -->
+            <div id="sliceNavigatorBar" class="slice-navigator-bar" hidden>
+                <div class="slice-nav-controls">
+                    <span class="slice-nav-label">Slice:</span>
+                    <button type="button" id="prevSliceBtn" class="slice-nav-btn" aria-label="Previous CT slice">◀</button>
+                    <span id="sliceNavCounter" class="slice-nav-counter mono">60 / 60</span>
+                    <button type="button" id="nextSliceBtn" class="slice-nav-btn" aria-label="Next CT slice">▶</button>
+                </div>
+                <div class="slice-nav-peak mono">
+                    Peak Slice: <strong id="sliceNavPeak">#68</strong>
+                    <button type="button" id="jumpPeakBtn" class="btn-jump-peak">Jump to Peak</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- =================================================================
+             EMPTY STATE (Shown before any file is analyzed)
+             ================================================================= -->
+        <section id="emptyState" class="dashboard-card state-card empty-state-card" aria-live="polite">
+            <div class="state-icon" aria-hidden="true">🩻</div>
+            <h2 class="state-title">No Analysis Yet</h2>
+            <p class="state-description">
+                Upload a CT slice above to begin tumor detection and morphometric analysis.
+            </p>
+        </section>
+
+        <!-- =================================================================
+             LOADING STATE (Shown while model is running)
+             ================================================================= -->
+        <section id="loadingState" class="dashboard-card state-card loading-state-card" hidden aria-live="polite" aria-busy="true">
+            <div class="state-icon spinner-pulse" aria-hidden="true">⏳</div>
+            <h2 class="state-title">Analyzing CT Slice...</h2>
+            <p class="state-description">
+                Running U-Net segmentation &bull; Computing morphometrics
+            </p>
+            <div class="progress-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="65">
+                <div id="loadingProgressBar" class="progress-bar-fill"></div>
+            </div>
+            <span id="loadingProgressText" class="progress-pct-text mono">65%</span>
+        </section>
+
+        <!-- =================================================================
+             ERROR STATE (Shown if upload or inference fails)
+             ================================================================= -->
+        <section id="errorState" class="dashboard-card state-card error-state-card" hidden role="alert" aria-live="polite">
+            <div class="state-icon" aria-hidden="true">⚠️</div>
+            <h2 class="state-title">Analysis Failed</h2>
+            <p id="errorStateMessage" class="state-description error-msg-text">
+                Invalid file format. Please upload PNG/JPG.
+            </p>
+            <button type="button" id="tryAgainBtn" class="btn-try-again">
+                🔄 Try Again
+            </button>
+        </section>
+
+        <!-- =================================================================
+             RESULTS CONTAINER (Sections A through F)
+             ================================================================= -->
+        <div id="resultsContainer" class="results-container" hidden>
+
+            <!-- =============================================================
+                 SECTION A: DETECTION RESULT (Positive & Negative Variants — FIX #5)
+                 ============================================================= -->
+            <section id="sectionA" class="dashboard-card detection-card detection-positive" aria-labelledby="secA-heading">
+                <div class="detection-top-row">
+                    <span id="secA-heading" class="detection-kicker">DIAGNOSTIC FINDING</span>
+                    <span id="detFileName" class="detection-filename mono">Adrenal_Ki67_Seg_041_slice_060.png</span>
+                </div>
+
+                <div id="detHeadline" class="detection-headline">
+                    ✅ TUMOR DETECTED &bull; POSITIVE FINDING
+                </div>
+
+                <div class="detection-metrics-strip">
+                    <span class="det-metric-badge">
+                        Detection Confidence: <strong id="detConfidenceVal" class="mono">97.6%</strong>
+                    </span>
+                    <span class="det-metric-badge">
+                        Threshold: <strong id="detThresholdVal" class="mono">0.80</strong>
+                    </span>
+                </div>
+
+                <p id="detSubtext" class="detection-subtext">
+                    Pathological adrenal lesion detected. Post-processing: CCA applied.
+                </p>
+            </section>
+
+            <!-- =============================================================
+                 ROW: SECTION B (60% width) + SECTION C (40% width)
+                 ============================================================= -->
+            <div id="positiveGridRow" class="bc-split-grid">
+
+                <!-- SECTION B: SEGMENTATION VIEWER (60% width) -->
+                <section id="sectionB" class="dashboard-card section-b-card" aria-labelledby="secB-title">
+                    <div class="card-header-bar">
+                        <h2 id="secB-title" class="card-title">Segmentation Viewer</h2>
+                        <span class="card-meta-tag mono">Resolution: 512 &times; 512 &bull; Viewport: PACS Axial</span>
+                    </div>
+
+                    <div class="three-panel-viewer">
+                        <figure class="viewer-panel">
+                            <figcaption class="panel-header">Original CT</figcaption>
+                            <div class="panel-canvas">
+                                <img id="secBOrigImg" src="" alt="Original axial CT slice windowed [-160, 240] HU">
+                            </div>
+                            <div class="panel-caption">Raw CT slice, windowed [-160, 240] HU</div>
+                        </figure>
+
+                        <figure class="viewer-panel">
+                            <figcaption class="panel-header">Segmentation Mask</figcaption>
+                            <div class="panel-canvas">
+                                <img id="secBMaskImg" src="" alt="U-Net binary segmentation mask, white tumor region on black background">
+                            </div>
+                            <div class="panel-caption">U-Net output, white on black</div>
+                        </figure>
+
+                        <figure class="viewer-panel">
+                            <figcaption class="panel-header">Tumor Overlay</figcaption>
+                            <div class="panel-canvas">
+                                <img id="secBOverlayImg" src="" alt="Original CT slice with red adrenal tumor segmentation overlay">
+                            </div>
+                            <div class="panel-caption">CT with red tumor overlay (55% blend)</div>
+                        </figure>
+                    </div>
+                </section>
+
+                <!-- SECTION C: MORPHOMETRIC MEASUREMENTS (40% width) -->
+                <section id="sectionC" class="dashboard-card section-c-card" aria-labelledby="secC-title">
+                    <div class="card-header-bar">
+                        <h2 id="secC-title" class="card-title">Morphometric Measurements</h2>
+                    </div>
+
+                    <div class="table-responsive-wrap">
+                        <table class="measurements-table" aria-label="Morphometric Measurements">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Measurement Parameter</th>
+                                    <th scope="col" class="num-col">Physical Value</th>
+                                    <th scope="col" class="num-col">Pixels</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td data-label="Parameter">Cross-Sectional Area (This Slice)</td>
+                                    <td id="measAreaMm2" class="mono num-col" data-label="Physical Value">2614.94 mm²</td>
+                                    <td id="measAreaPx" class="mono num-col" data-label="Pixels">5231 px</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Parameter">Approx. Extruded Volume</td>
+                                    <td id="measVolumeCm3" class="mono num-col" data-label="Physical Value">13.075 cm³</td>
+                                    <td class="mono num-col" data-label="Pixels">&mdash;</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Parameter">Transverse Width</td>
+                                    <td id="measWidthMm" class="mono num-col" data-label="Physical Value">65.75 mm</td>
+                                    <td id="measWidthPx" class="mono num-col" data-label="Pixels">93 px</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Parameter">Anteroposterior Height</td>
+                                    <td id="measHeightMm" class="mono num-col" data-label="Physical Value">66.46 mm</td>
+                                    <td id="measHeightPx" class="mono num-col" data-label="Pixels">94 px</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Parameter">Maximum In-Plane Dimension</td>
+                                    <td id="measMaxDimMm" class="mono num-col font-semibold" data-label="Physical Value">66.46 mm</td>
+                                    <td id="measMaxDimPx" class="mono num-col" data-label="Pixels">94 px</td>
+                                </tr>
+                                <tr>
+                                    <td data-label="Parameter">Slice Area Coverage</td>
+                                    <td id="measCoveragePct" class="mono num-col" data-label="Physical Value">1.9955 %</td>
+                                    <td class="mono num-col" data-label="Pixels">&mdash;</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="measSpacingFooter" class="card-footer-strip mono">
+                        Voxel Spacing: 0.707 &times; 0.707 &times; 5.000 mm (DICOM Verified)
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- =============================================================
+                 SECTION D: SLICE PROLIFERATIVE BURDEN INDEX (FIX #1)
+                 ============================================================= -->
+            <section id="sectionD" class="dashboard-card burden-index-card" aria-labelledby="secD-kicker">
+                <div id="secD-kicker" class="burden-kicker">SLICE PROLIFERATIVE BURDEN INDEX</div>
+
+                <div class="burden-hero-row">
+                    <div class="burden-main-stat">
+                        <div id="burdenIndexVal" class="burden-big-number mono">1.00</div>
+                        <div class="burden-subtitle">(Slice-to-Peak Area Ratio)</div>
+                    </div>
+                    <p id="burdenSummarySentence" class="burden-explanation">
+                        This slice is the peak cross-sectional slice.
+                    </p>
+                </div>
+
+                <hr class="burden-divider">
+
+                <div class="burden-meta-grid">
+                    <div id="burdenBiopsyKi67Item" class="burden-meta-item">
+                        <span class="burden-meta-label">Patient Baseline Ki-67 (Biopsy):</span>
+                        <span id="burdenBiopsyKi67Val" class="burden-meta-val mono">4.0%</span>
+                    </div>
+                    <div class="burden-meta-item">
+                        <span class="burden-meta-label">Relative Weight Factor:</span>
+                        <span id="burdenWeightVal" class="burden-meta-val mono">1.000</span>
+                    </div>
+                    <div class="burden-meta-item">
+                        <span class="burden-meta-label">Peak Reference Slice:</span>
+                        <span id="burdenPeakSliceVal" class="burden-meta-val mono">#107</span>
+                    </div>
+                </div>
+
+                <p class="burden-footer-note">
+                    This index is a spatial visualization metric. It represents the proportion of tumor cross-section present on this slice relative to the peak slice. It is NOT a biological Ki-67 measurement.
+                </p>
+            </section>
+
+            <!-- =============================================================
+                 SECTION E: TUMOR CROSS-SECTIONAL PROFILE GRAPH (FIX #7)
+                 ============================================================= -->
+            <section id="sectionE" class="dashboard-card profile-graph-card" aria-labelledby="secE-title">
+                <div class="graph-header-row">
+                    <div>
+                        <h2 id="secE-title" class="card-title">Tumor Cross-Sectional Area Across Axial Slices</h2>
+                        <p class="graph-subtitle">Single-scan spatial profile &mdash; not temporal growth</p>
+                    </div>
+                    <div class="graph-point-Callouts">
+                        <span class="point-callout callout-current mono" id="calloutCurrentSlice" hidden>
+                            ● Current Slice (105): 450.2 mm²
+                        </span>
+                        <span class="point-callout callout-peak mono" id="calloutPeakSlice">
+                            ● Peak Slice (107): 699.0 mm²
+                        </span>
+                    </div>
+                </div>
+
+                <div class="burden-zones-legend" aria-label="Local Burden Zones">
+                    <span class="zone-pill zone-pill-low">
+                        <span class="zone-swatch swatch-low" aria-hidden="true"></span>
+                        Low Local Burden (&lt; 33% of peak)
+                    </span>
+                    <span class="zone-pill zone-pill-mod">
+                        <span class="zone-swatch swatch-mod" aria-hidden="true"></span>
+                        Moderate Local Burden (33% &ndash; 66%)
+                    </span>
+                    <span class="zone-pill zone-pill-high">
+                        <span class="zone-swatch swatch-high" aria-hidden="true"></span>
+                        High Local Burden (&gt; 66%)
+                    </span>
+                </div>
+
+                <div class="chart-canvas-container">
+                    <canvas id="profileChart" aria-label="Tumor Cross-Sectional Area Across Axial Slices Chart" role="img"></canvas>
+                </div>
+
+                <p class="graph-footer-annotation">
+                    Post-peak descending slopes represent anatomical tapering, not verified regression. Longitudinal CT series required for temporal analysis.
+                </p>
+            </section>
+
+            <!-- =============================================================
+                 SECTION F: IMAGING REVIEW (3-Panel)
+                 ============================================================= -->
+            <section id="sectionF" class="dashboard-card imaging-review-card" aria-labelledby="secF-title">
+                <div class="card-header-bar">
+                    <h2 id="secF-title" class="card-title">Imaging Review</h2>
+                    <span id="secFFileLabel" class="card-meta-tag mono">Adrenal_Ki67_Seg_041_slice_060.png</span>
+                </div>
+
+                <div id="secFGrid" class="three-panel-viewer review-panels-large">
+                    <figure class="viewer-panel">
+                        <figcaption class="panel-header">Original CT</figcaption>
+                        <div class="panel-canvas">
+                            <img id="secFOrigImg" src="" alt="Imaging review: Original CT slice">
+                        </div>
+                    </figure>
+
+                    <figure id="secFMaskPanel" class="viewer-panel">
+                        <figcaption class="panel-header">Segmentation Mask</figcaption>
+                        <div class="panel-canvas">
+                            <img id="secFMaskImg" src="" alt="Imaging review: Segmentation mask">
+                        </div>
+                    </figure>
+
+                    <figure id="secFOverlayPanel" class="viewer-panel">
+                        <figcaption class="panel-header">Tumor Overlay</figcaption>
+                        <div class="panel-canvas">
+                            <img id="secFOverlayImg" src="" alt="Imaging review: Tumor overlay">
+                        </div>
+                    </figure>
+                </div>
+            </section>
+
+        </div><!-- /#resultsContainer -->
+
+        <!-- =================================================================
+             MINIMAL FOOTER (Strictly Prototype Label + 2 Action Buttons)
+             ================================================================= -->
+        <footer class="dashboard-footer" role="contentinfo">
+            <div class="footer-left">
+                <span class="footer-brand-label">AdrenalCare &mdash; Research Prototype</span>
+            </div>
+            <div class="footer-actions">
+                <button type="button" id="downloadPdfBtn" class="btn-footer-secondary" disabled>
+                    Download PDF Report
+                </button>
+                <button type="button" id="newAnalysisFooterBtn" class="btn-footer-primary">
+                    New Analysis
+                </button>
+            </div>
+        </footer>
+
+        <!-- Print-Only Footer -->
+        <div class="print-only-footer" aria-hidden="true">
+            Generated by AdrenalCare &mdash; Research Prototype
+        </div>
+
+    </main>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

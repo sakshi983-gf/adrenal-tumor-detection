@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Settings — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+    <header class="dash-header">
+        <div class="dash-header-left">
+            <a href="{{ url_for('dashboard_page') }}" class="dash-logo">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+            <span class="dash-divider">|</span>
+            <span class="dash-subtitle">Application Settings</span>
+        </div>
+        <div class="dash-header-right">
+            <a href="{{ url_for('dashboard_page') }}" class="btn-navy-outline" style="padding: 6px 14px; font-size: 13px;">
+                ← Back to Dashboard
+            </a>
+            <a href="{{ url_for('profile_page') }}" class="landing-nav-link" style="font-weight: 600;">Profile</a>
+            <a href="{{ url_for('logout_page') }}" class="landing-nav-link" style="color: #C62828; font-weight: 600;">Logout</a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-wrapper" style="max-width: 520px;">
+            <h1 class="auth-title">Application Settings</h1>
+            <div class="auth-card">
+                <div id="settings-msg" class="auth-info-alert" style="display: none;"></div>
+
+                <form id="settings-form" novalidate>
+                    <div class="auth-field">
+                        <label for="default-threshold">Default Probability Threshold (0.50 – 0.95)</label>
+                        <input type="number" id="default-threshold" class="mono" min="0.50" max="0.95" step="0.05" value="0.80">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="default-tab">Default Dashboard Tab</label>
+                        <select id="default-tab" style="width: 100%; padding: 10px 12px; border: 1px solid #E5E7EB; border-radius: 6px; font-size: 14px;">
+                            <option value="overview">Overview</option>
+                            <option value="segmentation">Segmentation</option>
+                            <option value="measurements">Measurements</option>
+                            <option value="profile">Profile</option>
+                        </select>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-checkbox-label">
+                            <input type="checkbox" id="strict-ct-validation" checked>
+                            <span>Enable 3-Layer Adrenal CT Image Validation</span>
+                        </label>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button type="submit" class="btn-navy-filled" style="flex: 1;">Save Settings</button>
+                        <a href="{{ url_for('dashboard_page') }}" class="btn-navy-outline">Return to Dashboard</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.getElementById("settings-form");
+            const msgBox = document.getElementById("settings-msg");
+            const threshInput = document.getElementById("default-threshold");
+            const tabSelect = document.getElementById("default-tab");
+
+            const savedThresh = localStorage.getItem("adrenalcare_default_threshold");
+            if (savedThresh) threshInput.value = savedThresh;
+            const savedTab = localStorage.getItem("adrenalcare_default_tab");
+            if (savedTab) tabSelect.value = savedTab;
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                localStorage.setItem("adrenalcare_default_threshold", threshInput.value);
+                localStorage.setItem("adrenalcare_default_tab", tabSelect.value);
+                msgBox.textContent = "Preferences saved successfully.";
+                msgBox.style.display = "block";
+            });
+        })();
+    </script>
+</body>
+</html>

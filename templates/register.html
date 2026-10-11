@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account — AdrenalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+
+    <header class="auth-header">
+        <div class="auth-header-inner">
+            <a href="{{ url_for('landing_page') }}" class="landing-brand">
+                <span>🏥</span>
+                <span>AdrenalCare</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="auth-main">
+        <div class="auth-wrapper">
+            <h1 class="auth-title">Create Your Account</h1>
+            <div class="auth-card">
+                <div id="auth-error" class="auth-alert" style="display: none;"></div>
+
+                <form id="register-form" novalidate>
+                    <div class="auth-field">
+                        <label for="full_name">Full Name</label>
+                        <input type="text" id="full_name" name="full_name" placeholder="Dr. Jane Smith" required minlength="3">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" placeholder="jane@hospital.com" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="license_number">Medical License Number</label>
+                        <input type="text" id="license_number" name="license_number" placeholder="MD-948201" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="institution">Hospital / Institution</label>
+                        <input type="text" id="institution" name="institution" placeholder="Memorial Oncology Hospital" required>
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" placeholder="Min 8 chars, 1 uppercase, 1 number" required minlength="8">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter password" required>
+                    </div>
+
+                    <button type="submit" id="register-btn" class="btn-navy-filled btn-block">Create Account</button>
+                </form>
+
+                <p class="auth-footer-text">
+                    Already have an account? <a href="{{ url_for('login_page') }}">Login</a>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.getElementById("register-form");
+            const errorBox = document.getElementById("auth-error");
+            const submitBtn = document.getElementById("register-btn");
+
+            function showError(msg) {
+                errorBox.textContent = msg;
+                errorBox.style.display = "block";
+            }
+
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+                errorBox.style.display = "none";
+
+                const payload = {
+                    full_name: document.getElementById("full_name").value.trim(),
+                    email: document.getElementById("email").value.trim(),
+                    license_number: document.getElementById("license_number").value.trim(),
+                    institution: document.getElementById("institution").value.trim(),
+                    password: document.getElementById("password").value,
+                    confirm_password: document.getElementById("confirm_password").value
+                };
+
+                if (payload.full_name.length < 3) {
+                    showError("Full Name must be at least 3 characters.");
+                    return;
+                }
+                if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payload.email)) {
+                    showError("Please enter a valid email address.");
+                    return;
+                }
+                if (!payload.license_number) {
+                    showError("Medical License Number is required.");
+                    return;
+                }
+                if (!payload.institution) {
+                    showError("Hospital / Institution is required.");
+                    return;
+                }
+                if (payload.password.length < 8 || !/[A-Z]/.test(payload.password) || !/\d/.test(payload.password)) {
+                    showError("Password must be at least 8 characters with 1 uppercase letter and 1 number.");
+                    return;
+                }
+                if (payload.password !== payload.confirm_password) {
+                    showError("Passwords do not match.");
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Creating Account...";
+
+                try {
+                    const res = await fetch("/api/register", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok || data.error) {
+                        showError(data.error || "Registration failed.");
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = "Create Account";
+                        return;
+                    }
+                    window.location.href = data.redirect || "/dashboard";
+                } catch (err) {
+                    showError("Network error. Please try again.");
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Create Account";
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
